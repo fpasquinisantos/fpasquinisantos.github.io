@@ -5,7 +5,7 @@ permalink: /
 subtitle: Professor of Computer Science at <a href='https://cs.calvin.edu/'>Calvin University</a> #. Address. Contacts. Moto. Etc.
 
 profile:
-  align: left
+  align: right
   image: prof_pic.jpg
   image_circular: false # crops the image to make it circular
   more_info: #>
