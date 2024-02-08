@@ -4,9 +4,9 @@
     - name: Full Name
       value: Fernando Pasquini Santos
     - name: Date of Birth
-      value: 13th September 1990
-    - name: Language
-      value: Portuguese, English
+      value: 14th March 1879
+    - name: Languages
+      value: English, German
 
 - title: Education
   type: time_table

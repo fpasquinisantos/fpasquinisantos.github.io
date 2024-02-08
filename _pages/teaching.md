@@ -2,11 +2,13 @@
 layout: page
 permalink: /teaching/
 title: teaching
-description: Materials for courses you taught. Replace this text with your description.
 nav: true
 nav_order: 3
 ---
 
-For now, this page is assumed to be a static description of your courses. You can convert it to a collection similar to `_projects/` so that you can have a dedicated page for each course.
+I currently teach two courses at Calvin University.
 
-Organize your courses by years, topics, or universities, however you like!
+- [CS-108 - Introduction to Computing](https://cs.calvin.edu/courses/cs/108/fsantos/)
+- [DATA-202 - Wrangling and Analytics](https://calvin-data-science.github.io/data202/)
+
+Other subjects I've taught previously: Philosophy of Technology, Health Information Systems, Engineering Ethics, Electromagnectics for Engineers, Analog Electronics, Digital Electronics.
