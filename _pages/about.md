@@ -27,7 +27,7 @@ You can check my [research interests (and more) here](./interests.md).
 
 My [publications are listed here](./publications.md).
 
-I'm also a member at the following organizations:
+I'm also a member of the following organizations:
 - [Association of Christians in the Mathematical Sciences, ACMS](https://acmsonline.org)
 - [Associação Brasileira de Cristãos na Ciência, ABC2](https://cristaosnaciencia.org.br)
 - [Comunhão Popular](https://comunhaopopular.org)
