@@ -69,7 +69,7 @@ og_image: # The site-wide (default for all links) Open Graph preview image
 github_username: fpasquinisantos # your GitHub user name
 gitlab_username: # your GitLab user name
 x_username: # your X handle
-mastodon_username: # your mastodon instance+username in the format instance.tld/@username
+mastodon_username: mastodon.social/@fpasquinisantos # your Mastodon handle (e.g., mastodon.social/@username)
 linkedin_username: fernando-pasquini-santos-28846124 # your LinkedIn user name
 telegram_username: # your Telegram user name
 scholar_userid: # your Google Scholar ID
