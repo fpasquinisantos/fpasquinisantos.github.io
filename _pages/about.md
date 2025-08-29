@@ -2,7 +2,7 @@
 layout: about
 title: about
 permalink: /
-subtitle: Professor of Computer Science at <a href='https://cs.calvin.edu/'>Calvin University</a> #. Address. Contacts. Moto. Etc.
+subtitle: Discerning Information Technology for the Common Good #. Address. Contacts. Moto. Etc.
 
 profile:
   align: right
@@ -19,15 +19,15 @@ profile:
 social: true # includes social icons at the bottom of the page
 ---
 
-I'm Professor of Computer Science at [Calvin University](https://calvin.edu). My scholarship revolves around philosophy of technology, data science and human-computer interaction. I hold a Ph.D. in Dynamical Systems from the University of São Paulo.
+I'm Professor of Computer Science at [Calvin University](https://calvin.edu). My scholarship revolves around philosophy of technology, data science and human-computer interaction. I hold a Ph.D. in Complex Systems Modeling from the University of São Paulo.
 
 I'm originally from Poços de Caldas, Brazil :brazil:
 
 You can check my [research interests (and more) here](./interests.md).
 
-My [CV is found here](./cv), and my [publications are listed here](./publications.md).
+My [publications are listed here](./publications.md).
 
-I'm also a contributing member at the following organizations:
-- Association of Christians in the Mathematical Sciences, [ACMS](https://acmsonline.org)
-- Associação Brasileira de Cristãos na Ciência [ABC2](https://cristaosnaciencia.org.br)
+I'm also a member at the following organizations:
+- [Association of Christians in the Mathematical Sciences, ACMS](https://acmsonline.org)
+- [Associação Brasileira de Cristãos na Ciência, ABC2](https://cristaosnaciencia.org.br)
 - [Comunhão Popular](https://comunhaopopular.org)
