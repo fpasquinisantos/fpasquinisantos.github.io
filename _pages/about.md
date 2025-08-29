@@ -23,9 +23,9 @@ I'm Professor of Computer Science at [Calvin University](https://calvin.edu). My
 
 I'm originally from Poços de Caldas, Brazil :brazil:
 
-You can check my [research interests (and more) here](./interests.md).
+You can check my [research interests (and more) here](./interests).
 
-My [publications are listed here](./publications.md).
+My [publications are listed here](./publications).
 
 I'm also a member of the following organizations:
 - [Association of Christians in the Mathematical Sciences, ACMS](https://acmsonline.org)

@@ -6,7 +6,7 @@ nav: true
 nav_order: 1
 ---
 
-# Research Questions
+# Main Guiding Questions in my Research
 
 ## 1. Information Technology and the Common Good
 - What is the role of information in a good society? What good can it really achieve - and what harm?
@@ -29,9 +29,15 @@ nav_order: 1
 
 ## My approach to tackling current issues surrounding generative AI:
 - I'm in computer science, so I'm asked about generative AI all the time, even though it is not my main research area. Still, from the perspective of my research interests around a philosophy of information, I usually make questions about how LLMs are changing our experience of reality. For example:
-  - How is generative AI changing our experience of truth, knowledge and expertise?
+  - How is generative AI changing our experience of truth, knowledge and expertise? Specifically: how is it creating "illusion of knowledge" and how can we counter it?
   - How is generative AI changing our experience of people? (i.e., they are simulating people)
   - How could generative AI be trapping us in an closed/informationally-produced world? (A Matrix?)
+
+# Research direction I have been pursuing in order to deal with those questions
+1. Critical engagement with Luciano Floridi's Philosophy of Information, especially his concept of "infosphere" and "onlife". Plus, engaging with the philosophy of technology of Jacques Ellul, Albert Borgmann, Bernard Stiegler, Yuk Hui and others.
+2. Exploration of Human-Computer Interaction (HCI) and Computer-Supported Cooperative Work (CSCW) methods for designing more humane interfaces and systems - especially in the context of digital labor.
+3. Engagement with Christian philosophy and theology, especially in the theology of the eucharist, in order to understand the mediation of reality through symbols and see their implications in information technology.
+4. Simulating digital labor scenarios (corporate and cooperative) through agent-based modeling and system dynamics, in order to understand their dynamics and implications. Also, extending these simulations to classroom settings in order to teach these concepts to students.
 
 # Other Interests
 
