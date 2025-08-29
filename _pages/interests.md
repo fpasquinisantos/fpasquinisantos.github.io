@@ -18,8 +18,7 @@ nav_order: 1
 ## 2. Computational Modeling and Simulation
 - What sense can we make of the world through computational models and simulations?
 - How do data science practices transform reality into data, and what gets lost in this translation?
-- What are the pitfalls of dysfunctional sensemaking in simulations (confirmation bias, underdetermination, Duhem–Quine problem)?
-- What are
+- What are the pitfalls of dysfunctional sensemaking in models and simulations (confirmation bias, underdetermination, Duhem–Quine problem)?
 
 ## 3. Digital Labor
 - How is digital labor performed and what are its implications for workers and society?
@@ -27,7 +26,7 @@ nav_order: 1
 - What new venues can be sought in terms of governance, cooperativism and commons economy?
 - How should we organize and work collectively in this permanent state of crisis brought by social acceleration (Hartmut Rosa)?
 
-## my approach to tackling current issues surrounding generative AI:
+## my approach to tackling current issues surrounding generative AI
 I'm in computer science, so I'm asked about generative AI all the time, even though it is not my main research area. Still, from the perspective of my research interests around a philosophy of information, I usually make questions about how LLMs are changing our experience of reality. For example:
 - How is generative AI changing our experience of truth, knowledge and expertise? Specifically: how is it creating "illusions of knowledge" and how can we counter this?
 - How is generative AI changing our experience of people? (i.e., they are simulating people)
