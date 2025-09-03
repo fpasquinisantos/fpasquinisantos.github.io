@@ -296,7 +296,7 @@
     statusEl.className = '';
     statusEl.textContent = '';
     resultsEl.innerHTML = '';
-    if (!key){ statusEl.className='error'; statusEl.textContent='Enter a keyword to search.'; return; }
+    if (!key){ statusEl.className='error'; statusEl.textContent='Enter your Student ID to search.'; return; }
 
     try{
       const marksUrl = gvizUrl(CONFIG.spreadsheetId, CONFIG.marksTabName);
