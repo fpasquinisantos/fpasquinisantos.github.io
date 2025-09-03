@@ -19,7 +19,7 @@ profile:
 social: true # includes social icons at the bottom of the page
 ---
 
-I'm Professor of Computer Science at [Calvin University](https://calvin.edu). My scholarship revolves around data science, computational modeling, human-computer interaction and philosophy of technology. I hold a Ph.D. in Complex Systems from the University of São Paulo.
+I'm Professor of Computer Science at [Calvin University](https://calvin.edu). My scholarship revolves around data science, computational modeling, human-computer interaction and philosophy of technology. I hold a Ph.D. in Computational Science from University of São Paulo.
 
 I'm originally from Poços de Caldas, Brazil :brazil:
 
