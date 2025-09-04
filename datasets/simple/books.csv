@@ -1,0 +1,7 @@
+BookID,Title,Author,Year,Genre,Pages
+1,1984,George Orwell,1949.0,Dystopian,328
+2,The Hobbit,J.R.R. Tolkien,1937.0,Fantasy,310
+3,Pride and Prejudice,Jane Austen,1813.0,Romance,279
+4,The Catcher in the Rye,J.D. Salinger,1951.0,Fiction,277
+5,To Kill a Mockingbird,Harper Lee,1960.0,Fiction,281
+6,,Unknown,,Mystery,350
