@@ -30,4 +30,4 @@ My [publications are listed here](./publications).
 I'm also a member of the following organizations:
 - [Association of Christians in the Mathematical Sciences, ACMS](https://acmsonline.org)
 - [Associação Brasileira de Cristãos na Ciência, ABC2](https://cristaosnaciencia.org.br)
-- [Comunhão Popular](https://comunhaopopular.org)
+- [Brazilian Study Group on Jacques Ellul](https://jacquesellulbrasil.wordpress.com)
