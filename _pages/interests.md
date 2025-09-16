@@ -9,7 +9,7 @@ nav_order: 1
 # Main guiding questions
 
 ## 1. Information Technology and the Common Good
-- What is the role of information in a good society? What good can it really achieve - and what harm?
+- What is the role of information in a good society? What good can it really achieve - and what harm? 
 - What is the nature of information? How does it relate to reality, truth, knowledge and meaning?
 - How does (and should) information modulate our experience of visibility, memory and presence?
 - How do we remain present to truth and to others in a world of hyperreality and mediated interfaces (screens, feeds, LLMs)? How to limit these, and how to give them their proper place?

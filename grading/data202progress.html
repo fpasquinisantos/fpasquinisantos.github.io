@@ -116,13 +116,25 @@
   const cellVal = c => (c == null ? '' : (c.f ?? c.v ?? ''));
   const prefixToArea = p => ({WRA:'Wrangling', VIS:'Visualization', MOD:'Modeling', PRO:'Project'}[p] || p);
 
-  function parseMarksTable(table){
-    const rows = table.rows.map(r => r.c.map(cellVal));
-    if (rows.length < 2) throw new Error('Marks tab must have headers + at least one student row.');
-    const headers = rows[0];
-    const students = rows.slice(1).filter(r => r && r.some(x => (x+'').trim() !== ''));
-    return { headers, students };
-  }
+function parseMarksTable(table){
+  const cv = c => (c == null ? '' : (c.f ?? c.v ?? ''));
+  const clean = s => (s||'').toString().replace(/\u00A0/g,' ').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
+
+  // 1) Prefer column labels for headers
+  const labels = (table.cols || []).map(c => clean(c && (c.label || c.id || '')));
+  const hasLabels = labels.some(Boolean);
+  const headers = hasLabels ? labels : (table.rows?.[0]?.c || []).map(cv).map(clean);
+
+  // 2) Data rows: if we used first row as headers, drop it
+  const allRows = (table.rows || []).map(r => r.c.map(cv));
+  const students = (hasLabels ? allRows : allRows.slice(1))
+    .filter(r => r && r.some(x => clean(x) !== ''));
+
+  // Debug: see what GViz gave us
+  console.log('Marks headers →', headers);
+
+  return { headers, students };
+}
   function parseSLOsTable(table){
     const rows = table.rows.map(r => r.c.map(cellVal));
     if (rows.length < 2) throw new Error('SLOs tab is required (must have Code, Description, Area).');
@@ -145,6 +157,7 @@
         area: areaRaw ? prefixToArea(areaRaw.slice(0,3)) : null
       };
     });
+    console.log('SLOs header parsed as:', map);
     return map;
   }
 
@@ -296,7 +309,7 @@
     statusEl.className = '';
     statusEl.textContent = '';
     resultsEl.innerHTML = '';
-    if (!key){ statusEl.className='error'; statusEl.textContent='Enter your Student ID to search.'; return; }
+    if (!key){ statusEl.className='error'; statusEl.textContent='Enter a keyword to search.'; return; }
 
     try{
       const marksUrl = gvizUrl(CONFIG.spreadsheetId, CONFIG.marksTabName);
