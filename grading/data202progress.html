@@ -5,14 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Your Progress on DATA 202</title>
 <style>
-  :root{
-    --green:#d9f5d9;
-    --yellow:#fff6cc;
-    --gray:#efefef;
-    --darkgray:#b8b8b8;
-    --bar:#2a6fdb;
-    --bar-bg:#e9eef9;
-  }
+  :root{ --green:#d9f5d9; --yellow:#fff6cc; --gray:#efefef; --darkgray:#b8b8b8; --bar:#2a6fdb; --bar-bg:#e9eef9; }
   body{ font-family:system-ui, Arial, sans-serif; margin:2rem; }
   .row{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
   input[type=text]{ padding:.5rem; min-width:260px; }
@@ -31,7 +24,8 @@
   td.mark.A{ background:var(--green); }
   td.mark.P{ background:var(--yellow); }
   td.mark.N{ background:var(--gray); color:#555; }
-  td.mark.NA{ background:var(--darkgray); color:#fff; } /* not present in sheet → excluded from totals */
+  td.mark.NA{ background:var(--darkgray); color:#fff; } /* column not present */
+  td.mark.NG{ background:#fff; color:#444; font-style:italic; } /* blank cell -> Not Graded */
   .totals{ margin-top:.5rem; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
   .counts{ font-weight:600; }
   .meter{ position:relative; width:280px; height:12px; background:var(--bar-bg); border-radius:999px; overflow:hidden; }
@@ -54,12 +48,11 @@
   // ===== CONFIG =====
   const CONFIG = {
     spreadsheetId: "1aTWwSfbTp26CHxWFuMSWwfxgNZKk_YL7oyQMKkTNL7s",
-    marksTabName:  "Marks", // headers in row 1. Col0=key, SLOs start at Col1+
-    slosTabName:   "SLOs"   // REQUIRED: columns like Code, Description, Area
+    marksTabName:  "Marks", // Col0 = key. SLO columns begin wherever the first SLO-looking header appears.
+    slosTabName:   "SLOs"   // Columns: Code, Description, (optional) Area
   };
-  const EXACT_MATCH = true;       // exact match on first column
-  const WEIGHT_PROJECT_X3 = true; // Project ×3 in overall (label still "Overall")
-  const SLOS_START_COL = 1;       // <— NO NAME COLUMN: SLOs start at index 1 now
+  const EXACT_MATCH = true;
+  const WEIGHT_PROJECT_X3 = true;
   // ==================
 
   const statusEl  = document.getElementById('status');
@@ -106,88 +99,125 @@
         if (!resolved){
           Q.setResponse = prev;
           if (script && script.parentNode) script.parentNode.removeChild(script);
-          reject(new Error('GViz timeout: sheet blocked or unexpected response. Is it public/published?'));
+          reject(new Error('GViz timeout: sheet blocked or unexpected response. Is it public to “Anyone with the link”?'));
         }
       }, 15000);
     });
   }
 
-  // ---- Parsing helpers ----
+  // ---- Helpers ----
   const cellVal = c => (c == null ? '' : (c.f ?? c.v ?? ''));
+  const clean = s => (s||'').toString()
+    .replace(/\u00A0/g,' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g,'')
+    .trim();
+  const upperClean = s => clean(s).toUpperCase();
   const prefixToArea = p => ({WRA:'Wrangling', VIS:'Visualization', MOD:'Modeling', PRO:'Project'}[p] || p);
 
-function parseMarksTable(table){
-  const cv = c => (c == null ? '' : (c.f ?? c.v ?? ''));
-  const clean = s => (s||'').toString().replace(/\u00A0/g,' ').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
+  // Prefer GViz column labels; fallback to first row if labels are empty
+  function extractHeaders(table){
+    const labels = (table.cols || []).map(c => clean(c && (c.label || c.id || '')));
+    if (labels.some(Boolean)) return labels;
+    const rows = table.rows || [];
+    if (!rows.length) return [];
+    return rows[0].c.map(cellVal).map(clean);
+  }
 
-  // 1) Prefer column labels for headers
-  const labels = (table.cols || []).map(c => clean(c && (c.label || c.id || '')));
-  const hasLabels = labels.some(Boolean);
-  const headers = hasLabels ? labels : (table.rows?.[0]?.c || []).map(cv).map(clean);
+  function parseMarks(table){
+    const headers = extractHeaders(table);
+    const dataRows = (table.rows || []).map(r => r.c.map(cellVal));
+    const usedFirstRowAsHeaders = !(table.cols || []).some(c => clean(c && (c.label||'')));
+    const students = (usedFirstRowAsHeaders ? dataRows.slice(1) : dataRows)
+      .filter(r => r && r.some(x => clean(x) !== ''));
+    return { headers, students };
+  }
 
-  // 2) Data rows: if we used first row as headers, drop it
-  const allRows = (table.rows || []).map(r => r.c.map(cv));
-  const students = (hasLabels ? allRows : allRows.slice(1))
-    .filter(r => r && r.some(x => clean(x) !== ''));
-
-  // Debug: see what GViz gave us
-  console.log('Marks headers →', headers);
-
-  return { headers, students };
-}
+  // Robust SLOs parser:
+  // - uses labels if present; otherwise scans the first row
+  // - tolerant to variants
+  // - NEVER throws; returns {} if not found so the UI still renders
   function parseSLOsTable(table){
-    const rows = table.rows.map(r => r.c.map(cellVal));
-    if (rows.length < 2) throw new Error('SLOs tab is required (must have Code, Description, Area).');
-    const hdr = rows[0].map(x => (x||'').toString().trim().toLowerCase());
-    const idx = {
-      code: hdr.findIndex(h => ['code','slo','id'].includes(h)),
-      desc: hdr.findIndex(h => ['description','desc'].includes(h)),
-      area: hdr.findIndex(h => ['area','category','section'].includes(h))
-    };
-    if (idx.code < 0 || idx.desc < 0){
-      throw new Error('SLOs tab must have at least "Code" and "Description" headers.');
+    const rows = (table.rows || []).map(r => r.c.map(cellVal));
+    const headers = extractHeaders(table);
+
+    const syn = s => clean((s||'').toString()).toLowerCase();
+    const hdrLower = headers.map(h => syn(h));
+
+    const codeIdx = hdrLower.findIndex(h =>
+      ['code','slo','id','slo code','slo_id','slo id','slo-code'].includes(h)
+    );
+    const descIdx = hdrLower.findIndex(h =>
+      ['description','desc','descrição','descricao'].includes(h)
+    );
+    const areaIdx = hdrLower.findIndex(h =>
+      ['area','category','section','strand'].includes(h)
+    );
+
+    if (rows.length < 1){
+      console.warn('SLOs tab: GViz returned no rows.');
+      return {};
     }
+
+    // If we used labels, GViz has already consumed the first data row
+    const startRow = (table.cols || []).some(c => clean(c && c.label)) ? 0 : 1;
+
+    if (codeIdx < 0 || descIdx < 0){
+      console.warn('SLOs header not detected; proceeding without descriptions. Headers seen:', headers);
+      return {}; // graceful: descriptions will be empty, but SLOs still render
+    }
+
     const map = {};
-    rows.slice(1).forEach(r => {
-      const code = (r[idx.code] || '').toString().trim().toUpperCase();
+    rows.slice(startRow).forEach(r => {
+      const code = upperClean(r[codeIdx]);
       if (!code) return;
-      const areaRaw = (idx.area>=0 ? (r[idx.area] || '') : '').toString().trim().toUpperCase();
+      const areaRaw = areaIdx>=0 ? upperClean(r[areaIdx]) : '';
       map[code] = {
-        description: (r[idx.desc] || '').toString(),
+        description: clean(r[descIdx]),
         area: areaRaw ? prefixToArea(areaRaw.slice(0,3)) : null
       };
     });
-    console.log('SLOs header parsed as:', map);
     return map;
   }
 
-  // Header like: WRA01-Q, VIS03-R, MOD10-R, PRO01-A, PRO01-B
+  // Accept headers like WRA01-Q, WRA1Q, VIS 02 – r, MOD10R, PRO03-A, PRO3b
   function parseHeader(h){
-    const s = (h || '').toString().trim().toUpperCase();
-    const m = s.match(/^([A-Z]{3})(\d{2})(?:-([A-Z]))?$/);
+    let s = (h || '').toString()
+      .replace(/\u00A0/g, ' ')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/[–—]/g, '-')    // en/em dash -> hyphen
+      .replace(/\s+/g, '')
+      .toUpperCase();
+    const m = s.match(/^([A-Z]{3})(\d{1,2})(?:-?([QRAB]))?$/);
     if (!m) return null;
-    const [, pref, num, suffRaw] = m;
-    const code = pref + num;
+    const [, pref, numStr, suffRaw] = m;
     const area = prefixToArea(pref);
+    const code = pref + numStr.padStart(2, '0');
     let kind = null;
-    if (area === 'Project'){
-      if (suffRaw === 'A')      kind = 'P1 (A)';
+    if (area === 'Project') {
+      if (suffRaw === 'A') kind = 'P1 (A)';
       else if (suffRaw === 'B') kind = 'P2 (B)';
       else return null;
     } else {
-      if (suffRaw === 'Q')      kind = 'Quiz';
+      if (suffRaw === 'Q') kind = 'Quiz';
       else if (suffRaw === 'R') kind = 'Report';
       else return null;
     }
-    return { area, code, kind, num: Number(num) };
+    return { area, code, kind, num: Number(numStr) };
   }
 
-  // Build grouped view and verify SLO descriptions exist
-  // view: area -> code -> { description, marks: {kind->value}, order }
-  function buildView(headers, row, sloMeta){
+  function detectSLOStart(headers){
+    for (let i = 0; i < headers.length; i++){
+      if (parseHeader(headers[i])) return i;
+    }
+    return -1;
+  }
+
+  // Build grouped view; store raw mark (so we can detect NG blank)
+  function buildView(headers, row, sloMeta, sloStart){
     const view = {};
     const missing = new Set();
-    for (let col = SLOS_START_COL; col < headers.length; col++){ // SLOs start at col 1 now
+
+    for (let col = sloStart; col < headers.length; col++){
       const parsed = parseHeader(headers[col]);
       if (!parsed) continue;
       const { area, code, kind, num } = parsed;
@@ -196,16 +226,15 @@ function parseMarksTable(table){
       if (!meta || !meta.description) missing.add(code);
 
       const resolvedArea = (meta && meta.area) ? meta.area : area;
-
       if (!view[resolvedArea]) view[resolvedArea] = {};
       if (!view[resolvedArea][code]) {
         view[resolvedArea][code] = { description: (meta ? meta.description : ''), marks: {}, order: num || 0 };
       }
-      // Only set mark for columns that actually exist in the sheet:
-      view[resolvedArea][code].marks[kind] = (row[col] || '').toString().trim().toUpperCase();
+      view[resolvedArea][code].marks[kind] = (row[col] ?? '').toString(); // raw; may be blank -> NG
     }
+
     if (missing.size){
-      throw new Error("Missing SLO descriptions for codes:\n" + Array.from(missing).sort().join(", "));
+      console.warn("Missing SLO descriptions for codes:", Array.from(missing).sort().join(", "));
     }
     return view;
   }
@@ -220,37 +249,55 @@ function parseMarksTable(table){
     `;
   }
 
+  // NG (blank) and NA (missing col) are EXCLUDED from totals and mastery %
   function renderSection(area, entries){
     const cols = (area === 'Project') ? ['P1 (A)','P2 (B)'] : ['Quiz','Report'];
 
-    // natural sort by numeric part (WRA01, WRA02, ... WRA10)
     const codes = Object.keys(entries).sort((a,b) => {
       const na = Number(a.slice(3)), nb = Number(b.slice(3));
       if (isNaN(na) || isNaN(nb)) return a.localeCompare(b);
       return na - nb;
     });
 
-    let aCount=0, pCount=0, nCount=0, totalCells=0;
+    let aCount=0, pCount=0, nCount=0, totalGraded=0; // totals count ONLY A/P/N
     let rowsHtml='';
 
     codes.forEach(code => {
       const { description, marks } = entries[code];
+
       const tds = cols.map(label => {
         const raw = marks[label];
+
+        // Column not present → NA (excluded)
         if (typeof raw === 'undefined'){
-          // Not present in the sheet → dark gray, excluded from totals/overall
           return `<td class="mark NA">—</td>`;
         }
-        let val = (raw || '').toUpperCase();
+
+        const trimmed = (raw || '').toString().trim();
+
+        // Blank cell → NG (excluded from totals and mastery)
+        if (trimmed === ''){
+          return `<td class="mark NG">NG</td>`;
+        }
+
+        // Graded value (A/P/N). Default to N if unexpected.
+        let val = trimmed.toUpperCase();
         if (val !== 'A' && val !== 'P' && val !== 'N') val = 'N';
-        if (val==='A') aCount++; else if (val==='P') pCount++; else nCount++;
-        totalCells++;
+
+        if (val==='A') aCount++;
+        else if (val==='P') pCount++;
+        else nCount++;
+        totalGraded++;
+
         return `<td class="mark ${val}">${val}</td>`;
       }).join('');
+
       rowsHtml += `<tr><td class="code">${code}</td><td>${escapeHtml(description)}</td>${tds}</tr>`;
     });
 
-    const pct = totalCells ? ((aCount + 0.5*pCount) / totalCells * 100) : 0;
+    const masteryPct = totalGraded ? ((aCount + 0.5*pCount) / totalGraded * 100) : 0;
+
+    const legend = `<span class="muted">Legend: A=Achieved, P=Progressing, N=Needs work, NG=Not graded (excluded), —=Not applicable (excluded)</span>`;
 
     return `
       <h2>${area}</h2>
@@ -262,8 +309,11 @@ function parseMarksTable(table){
         <tbody>${rowsHtml}</tbody>
       </table>
       <div class="totals">
-        <span class="counts">Totals: A – ${aCount}/${totalCells}, P – ${pCount}/${totalCells}, N – ${nCount}/${totalCells}</span>
-        ${meter(pct, `${area} mastery`)}
+        <span class="counts">
+          Totals (graded only): A – ${aCount}/${totalGraded}, P – ${pCount}/${totalGraded}, N – ${nCount}/${totalGraded}
+        </span>
+        ${meter(masteryPct, `${area} mastery`)}
+        ${legend}
       </div>
     `;
   }
@@ -284,8 +334,10 @@ function parseMarksTable(table){
       Object.values(entries).forEach(({marks}) => {
         cols.forEach(label => {
           const raw = marks[label];
-          if (typeof raw === 'undefined') return; // NA cell → exclude entirely
-          const v = (raw || '').toUpperCase();
+          if (typeof raw === 'undefined') return;               // NA → skip
+          const trimmed = (raw || '').toString().trim();
+          if (trimmed === '') return;                           // NG → skip
+          const v = trimmed.toUpperCase();
           numerator   += w * (v === 'A' ? 1 : v === 'P' ? 0.5 : 0);
           denominator += w * 1;
         });
@@ -318,22 +370,26 @@ function parseMarksTable(table){
       statusEl.textContent = 'Loading marks (GViz JSONP)…';
       const marksPayload = await loadGVizJSONP(marksUrl);
       if (!marksPayload || !marksPayload.table) throw new Error('Marks GViz response missing table.');
-      const { headers, students } = parseMarksTable(marksPayload.table);
+      const { headers, students } = parseMarks(marksPayload.table);
 
-      statusEl.textContent = 'Loading SLOs (required)…';
+      const sloStart = detectSLOStart(headers);
+      if (sloStart < 0){
+        throw new Error('No SLO columns detected in Marks header (expect headers like WRA01-Q, VIS02-R, PRO01-A, etc.).');
+      }
+
+      statusEl.textContent = 'Loading SLOs (descriptions optional)…';
       const sloPayload = await loadGVizJSONP(slosUrl);
-      if (!sloPayload || !sloPayload.table) throw new Error('SLOs GViz response missing table.');
-      const sloMap = parseSLOsTable(sloPayload.table);
+      const sloMap = (sloPayload && sloPayload.table) ? parseSLOsTable(sloPayload.table) : {};
 
-      // Exact match on first column
+      // Find student by first column
       const keyLower = key.toLowerCase();
-      const matches = students.filter(r => (r[0] || '').toString().toLowerCase() === keyLower);
+      const matches = students.filter(r => clean(r[0]).toLowerCase() === keyLower);
 
       if (matches.length === 0){ statusEl.className='error'; statusEl.textContent=`No match for "${key}".`; return; }
       if (matches.length > 1){   statusEl.className='error'; statusEl.textContent=`${matches.length} matches for "${key}".`; return; }
 
       const row  = matches[0];
-      const view = buildView(headers, row, sloMap); // throws if any SLO code missing in SLOs tab
+      const view = buildView(headers, row, sloMap, sloStart);
       statusEl.className = 'ok';
       statusEl.textContent = `Found 1 match for "${key}".`;
       resultsEl.innerHTML = renderAll(view);
@@ -343,15 +399,6 @@ function parseMarksTable(table){
       statusEl.textContent = e.message;
     }
   }
-
-  // ---- Console tests (don’t affect UI) ----
-  (function tests(){
-    const T = (label, ok) => console.log(`[test] ${label}: ${ok?'OK':'FAIL'}`);
-    const ph1 = parseHeader('WRA01-Q');
-    const ph2 = parseHeader('PRO03-B');
-    T('parseHeader WRA01-Q', JSON.stringify(ph1)===JSON.stringify({area:'Wrangling',code:'WRA01',kind:'Quiz',num:1}));
-    T('parseHeader PRO03-B', JSON.stringify(ph2)===JSON.stringify({area:'Project',code:'PRO03',kind:'P2 (B)',num:3}));
-  })();
 </script>
 </body>
 </html>
