@@ -14,6 +14,7 @@
   #results{ margin-top:1rem; max-width:1100px; }
   h1{ margin:.2rem 0 1rem; }
   h2{ margin:1.5rem 0 .25rem; }
+  h3{ margin:1.2rem 0 .2rem; }
   .hdrline{ height:1px; background:#eee; margin:.35rem 0 .5rem; }
   .muted{ color:#666; font-size:.9rem; }
   table{ border-collapse:collapse; width:100%; margin-top:.5rem; }
@@ -33,6 +34,7 @@
   .overall{ margin-top:1rem; padding-top:.6rem; border-top:2px solid #000; font-size:1.05rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
   .error{ color:#b00020; font-weight:600; white-space:pre-wrap; }
   .ok{ color:#0b6a0b; }
+  .week-block{ margin-bottom:1.75rem; }
 </style>
 </head>
 <body>
@@ -49,10 +51,10 @@
   const CONFIG = {
     spreadsheetId: "1aTWwSfbTp26CHxWFuMSWwfxgNZKk_YL7oyQMKkTNL7s",
     marksTabName:  "Marks", // Col0 = key. SLO columns begin wherever the first SLO-looking header appears.
-    slosTabName:   "SLOs"   // Columns: Code, Description, (optional) Area
+    slosTabName:   "SLOs"   // Columns: Code, Description, Area (optional), Week (optional)
   };
   const EXACT_MATCH = true;
-  const WEIGHT_PROJECT_X3 = true;
+  const WEIGHT_PROJECT_X3 = true; // overall weighting remains; per-week meters are unaffected by this
   // ==================
 
   const statusEl  = document.getElementById('status');
@@ -132,17 +134,16 @@
     return { headers, students };
   }
 
-  // Robust SLOs parser:
-  // - uses labels if present; otherwise scans the first row
-  // - tolerant to variants
-  // - NEVER throws; returns {} if not found so the UI still renders
+  // Robust SLOs parser reads Code, Description, (Area), Week
   function parseSLOsTable(table){
     const rows = (table.rows || []).map(r => r.c.map(cellVal));
+    if (!rows.length) return {};
     const headers = extractHeaders(table);
 
     const syn = s => clean((s||'').toString()).toLowerCase();
     const hdrLower = headers.map(h => syn(h));
 
+    // indices (lenient)
     const codeIdx = hdrLower.findIndex(h =>
       ['code','slo','id','slo code','slo_id','slo id','slo-code'].includes(h)
     );
@@ -152,29 +153,23 @@
     const areaIdx = hdrLower.findIndex(h =>
       ['area','category','section','strand'].includes(h)
     );
+    const weekIdx = hdrLower.findIndex(h =>
+      ['week','weeks','week covered','wk','semana'].includes(h)
+    );
 
-    if (rows.length < 1){
-      console.warn('SLOs tab: GViz returned no rows.');
-      return {};
-    }
-
-    // If we used labels, GViz has already consumed the first data row
+    // startRow: if labels exist, rows already data; else skip header row 0
     const startRow = (table.cols || []).some(c => clean(c && c.label)) ? 0 : 1;
-
-    if (codeIdx < 0 || descIdx < 0){
-      console.warn('SLOs header not detected; proceeding without descriptions. Headers seen:', headers);
-      return {}; // graceful: descriptions will be empty, but SLOs still render
-    }
 
     const map = {};
     rows.slice(startRow).forEach(r => {
-      const code = upperClean(r[codeIdx]);
+      const code = (codeIdx >= 0 ? upperClean(r[codeIdx]) : '').trim();
       if (!code) return;
-      const areaRaw = areaIdx>=0 ? upperClean(r[areaIdx]) : '';
-      map[code] = {
-        description: clean(r[descIdx]),
-        area: areaRaw ? prefixToArea(areaRaw.slice(0,3)) : null
-      };
+      const desc = (descIdx >= 0 ? clean(r[descIdx]) : '');
+      const areaRaw = (areaIdx >= 0 ? upperClean(r[areaIdx]) : '');
+      const area = areaRaw ? prefixToArea(areaRaw.slice(0,3)) : null;
+      const week = (weekIdx >= 0 ? clean(r[weekIdx]) : 'Unscheduled'); // fallback label
+
+      map[code] = { description: desc, area, week };
     });
     return map;
   }
@@ -199,7 +194,7 @@
       else return null;
     } else {
       if (suffRaw === 'Q') kind = 'Quiz';
-      else if (suffRaw === 'R') kind = 'Report';
+      else if (suffRaw === 'R') kind = 'Practice';
       else return null;
     }
     return { area, code, kind, num: Number(numStr) };
@@ -212,29 +207,25 @@
     return -1;
   }
 
-  // Build grouped view; store raw mark (so we can detect NG blank)
+  // Build grouped view; store raw marks
+  // view: area -> code -> { description, week, marks:{kind->raw}, order }
   function buildView(headers, row, sloMeta, sloStart){
     const view = {};
-    const missing = new Set();
-
     for (let col = sloStart; col < headers.length; col++){
       const parsed = parseHeader(headers[col]);
       if (!parsed) continue;
       const { area, code, kind, num } = parsed;
 
-      const meta = sloMeta[code];
-      if (!meta || !meta.description) missing.add(code);
+      const meta = sloMeta[code] || {};
+      const resolvedArea = meta.area || area;
+      const description = meta.description || '';
+      const week = meta.week || 'Unscheduled';
 
-      const resolvedArea = (meta && meta.area) ? meta.area : area;
       if (!view[resolvedArea]) view[resolvedArea] = {};
       if (!view[resolvedArea][code]) {
-        view[resolvedArea][code] = { description: (meta ? meta.description : ''), marks: {}, order: num || 0 };
+        view[resolvedArea][code] = { description, week, marks: {}, order: num || 0 };
       }
       view[resolvedArea][code].marks[kind] = (row[col] ?? '').toString(); // raw; may be blank -> NG
-    }
-
-    if (missing.size){
-      console.warn("Missing SLO descriptions for codes:", Array.from(missing).sort().join(", "));
     }
     return view;
   }
@@ -249,17 +240,15 @@
     `;
   }
 
-  // NG (blank) and NA (missing col) are EXCLUDED from totals and mastery %
-  function renderSection(area, entries){
-    const cols = (area === 'Project') ? ['P1 (A)','P2 (B)'] : ['Quiz','Report'];
-
+  // Render a generic SLO table (A/P/N only in totals; NG/NA excluded)
+  function renderSLOTable(title, entries, cols){
     const codes = Object.keys(entries).sort((a,b) => {
       const na = Number(a.slice(3)), nb = Number(b.slice(3));
       if (isNaN(na) || isNaN(nb)) return a.localeCompare(b);
       return na - nb;
     });
 
-    let aCount=0, pCount=0, nCount=0, totalGraded=0; // totals count ONLY A/P/N
+    let aCount=0, pCount=0, nCount=0, totalGraded=0;
     let rowsHtml='';
 
     codes.forEach(code => {
@@ -268,25 +257,17 @@
       const tds = cols.map(label => {
         const raw = marks[label];
 
-        // Column not present → NA (excluded)
         if (typeof raw === 'undefined'){
-          return `<td class="mark NA">—</td>`;
+          return `<td class="mark NA">—</td>`; // NA
         }
-
         const trimmed = (raw || '').toString().trim();
-
-        // Blank cell → NG (excluded from totals and mastery)
         if (trimmed === ''){
-          return `<td class="mark NG">NG</td>`;
+          return `<td class="mark NG">NG</td>`; // NG
         }
 
-        // Graded value (A/P/N). Default to N if unexpected.
         let val = trimmed.toUpperCase();
         if (val !== 'A' && val !== 'P' && val !== 'N') val = 'N';
-
-        if (val==='A') aCount++;
-        else if (val==='P') pCount++;
-        else nCount++;
+        if (val==='A') aCount++; else if (val==='P') pCount++; else nCount++;
         totalGraded++;
 
         return `<td class="mark ${val}">${val}</td>`;
@@ -297,60 +278,96 @@
 
     const masteryPct = totalGraded ? ((aCount + 0.5*pCount) / totalGraded * 100) : 0;
 
-    const legend = `<span class="muted">Legend: A=Achieved, P=Progressing, N=Needs work, NG=Not graded (excluded), —=Not applicable (excluded)</span>`;
-
     return `
-      <h2>${area}</h2>
-      <div class="hdrline"></div>
-      <table>
-        <thead>
-          <tr><th style="width:90px">SLO</th><th>Description</th><th style="width:110px">${cols[0]}</th><th style="width:110px">${cols[1]}</th></tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-      <div class="totals">
-        <span class="counts">
-          Totals (graded only): A – ${aCount}/${totalGraded}, P – ${pCount}/${totalGraded}, N – ${nCount}/${totalGraded}
-        </span>
-        ${meter(masteryPct, `${area} mastery`)}
-        ${legend}
+      <div class="week-block">
+        <h3>${escapeHtml(title)}</h3>
+        <div class="hdrline"></div>
+        <table>
+          <thead>
+            <tr><th style="width:90px">SLO</th><th>Description</th><th style="width:110px">${cols[0]}</th><th style="width:110px">${cols[1]}</th></tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="totals">
+          <span class="counts">Totals (graded only): A – ${aCount}/${totalGraded}, P – ${pCount}/${totalGraded}, N – ${nCount}/${totalGraded}</span>
+          ${meter(masteryPct, `${title} mastery`)}
+          <span class="muted">Legend: A=Achieved, P=Progressing, N=Needs work, NG=Not graded (excluded), —=Not applicable (excluded)</span>
+        </div>
       </div>
     `;
   }
 
-  function renderAll(view){
-    const order = ['Wrangling','Visualization','Modeling','Project'];
+  // Render all: Weeks first (non-Project), then Projects
+  function renderAllByWeek(view){
     let html = '';
-    let numerator = 0, denominator = 0;
 
-    order.forEach(area => {
+    // 1) Build week -> {code->entry} for non-Project
+    const weekMap = {};
+    const nonProjectAreas = ['Wrangling','Visualization','Modeling'];
+    nonProjectAreas.forEach(area => {
       if (!view[area]) return;
-      html += renderSection(area, view[area]);
+      Object.entries(view[area]).forEach(([code, entry]) => {
+        const week = entry.week || 'Unscheduled';
+        if (!weekMap[week]) weekMap[week] = {};
+        weekMap[week][code] = entry;
+      });
+    });
 
-      const entries = view[area];
-      const cols = (area === 'Project') ? ['P1 (A)','P2 (B)'] : ['Quiz','Report'];
+    // 2) Sort weeks: numeric ascending if looks like a number; else alpha
+    const weekKeys = Object.keys(weekMap).sort((a,b) => {
+      const na = Number(a.replace(/[^\d.]/g,'')); // extract number if "Week 3"
+      const nb = Number(b.replace(/[^\d.]/g,''));
+      const aNum = !isNaN(na);
+      const bNum = !isNaN(nb);
+      if (aNum && bNum) return na - nb;
+      if (aNum && !bNum) return -1;
+      if (!aNum && bNum) return 1;
+      return a.localeCompare(b);
+    });
+
+    // 3) Render week tables (Quiz/Practice columns)
+    weekKeys.forEach(week => {
+      html += renderSLOTable(`Quiz/Practice ${week}`, weekMap[week], ['Quiz','Practice']);
+    });
+
+    // 4) Render Projects at the end (unchanged)
+    if (view['Project']){
+      html += `<h2>Projects</h2>`;
+      html += renderSLOTable('Project', view['Project'], ['P1 (A)','P2 (B)']);
+    }
+
+    // 5) Overall meter (graded only, still obeys Project ×3 if enabled)
+    let numerator = 0, denominator = 0;
+    const colsByArea = {
+      'Wrangling': ['Quiz','Practice'],
+      'Visualization': ['Quiz','Practice'],
+      'Modeling': ['Quiz','Practice'],
+      'Project': ['P1 (A)','P2 (B)']
+    };
+    Object.keys(colsByArea).forEach(area => {
+      if (!view[area]) return;
+      const cols = colsByArea[area];
       const w = (WEIGHT_PROJECT_X3 && area === 'Project') ? 3 : 1;
-
-      Object.values(entries).forEach(({marks}) => {
+      Object.values(view[area]).forEach(({marks}) => {
         cols.forEach(label => {
           const raw = marks[label];
-          if (typeof raw === 'undefined') return;               // NA → skip
+          if (typeof raw === 'undefined') return;               // NA
           const trimmed = (raw || '').toString().trim();
-          if (trimmed === '') return;                           // NG → skip
+          if (trimmed === '') return;                           // NG
           const v = trimmed.toUpperCase();
           numerator   += w * (v === 'A' ? 1 : v === 'P' ? 0.5 : 0);
           denominator += w * 1;
         });
       });
     });
-
     const overallPct = denominator ? (numerator/denominator*100) : 0;
     html += `
       <div class="overall">
-        <div><b>Overall:</b></div>
+        <div><b>Overall (graded only):</b></div>
         ${meter(overallPct, 'Overall mastery')}
       </div>
     `;
+
     return html;
   }
 
@@ -377,11 +394,10 @@
         throw new Error('No SLO columns detected in Marks header (expect headers like WRA01-Q, VIS02-R, PRO01-A, etc.).');
       }
 
-      statusEl.textContent = 'Loading SLOs (descriptions optional)…';
+      statusEl.textContent = 'Loading SLOs…';
       const sloPayload = await loadGVizJSONP(slosUrl);
       const sloMap = (sloPayload && sloPayload.table) ? parseSLOsTable(sloPayload.table) : {};
 
-      // Find student by first column
       const keyLower = key.toLowerCase();
       const matches = students.filter(r => clean(r[0]).toLowerCase() === keyLower);
 
@@ -390,9 +406,11 @@
 
       const row  = matches[0];
       const view = buildView(headers, row, sloMap, sloStart);
+
       statusEl.className = 'ok';
       statusEl.textContent = `Found 1 match for "${key}".`;
-      resultsEl.innerHTML = renderAll(view);
+
+      resultsEl.innerHTML = renderAllByWeek(view);
 
     }catch(e){
       statusEl.className = 'error';
