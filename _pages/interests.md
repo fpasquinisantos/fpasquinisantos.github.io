@@ -45,7 +45,7 @@ Use those at will if you want to have a long chat with me!
 - **Theories I'm attracted to**: Christian Humanism, Critical Realism, Communitarianism, Catholic Social Teaching, Virtue Ethics,   Actor-Network Theory, Cooperativism and Commons Economy.
 - **Authors**: Jacques Ellul, Albert Borgmann, Charles Taylor, Hartmut Rosa, Wendell Berry, Jacques Maritain, Bruno Latour, Oliver O'Donovan, Reinhold Niebuhr.
 - **Literature**: J. R. R. Tolkien, C.S. Lewis, Flannery O'Connor, George Bernanos, Ariano Suassuna.
-- **Movies**: The Lord of the Rings & Star Wars (for fun), Babette's Feast (for inspiration).
+- **Movies and TV**: The Lord of the Rings, Star Wars, One Piece (for fun), Babette's Feast (for inspiration).
 - **Board Games**: I have a rigorously curated collection of 150 board games, spanning through the broadest span of genres, mechanics and themes. See my [personal collection here](https://fpasquinisantos.notion.site/boardgames) and my [BoardGameGeek profile](https://boardgamegeek.com/user/fpasquini).
 - **Video Games**: The Legend of Zelda, The Legend of Zelda, and so on.
 - **Music**: I'm a pianist. Love early and baroque music, progressive rock, folk and Brazilian chorinho.
