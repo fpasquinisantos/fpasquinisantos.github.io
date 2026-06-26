@@ -23,59 +23,23 @@ include-in-header:
       </style>
 ---
 
-## Sociedade da competição
+## Equidade em Aprendizado de Máquina
 
-Pressuposto: um mundo de recursos limitados e, portanto, de competição em todos os lugares e todas as áreas.
+- Referência principal: *Fairness and Machine Learning* (Barocas, Hardt, Narayanan, 2019)
+- Vamos mostrar alguns conceitos básicos, e depois partir para reflexões...
 
-- em empregos/admissões
-- em provas/testes/avaliações
-- em honras/medalhas/etc
-- em dinheiro/crédito
+## Nosso exemplo: fazendo alguns estudantes "vencerem na vida"...? {.smaller}
 
-*"O mundo é feito de ganhadores e perdedores"*
-
-- Justiça, então, seria garantir que a competição é justa ("fair game")
-
-## Inequidade e discriminação
-
-Três possíveis sentidos:
-
-1. Atribuir vantagem/desvantagem a alguém com base em **critérios errados de relevância**
-2. Atribuir vantagem/desvantagem a alguém com base em **estereótipos e generalizações**
-3. Atribuir vantagem/desvantagem a alguém com base em **coisas sobre as quais a pessoa não tem controle**
-
-## Automação e burocracia
-
-Por que buscamos?
-
-1. Automação permite escalar o sistema
-2. Regras e procedimentos formais, *em teoria*, reduzem a arbitrariedade e tornam o raciocínio explícito.
-    - Supõem de que o processo apenas envolve conhecimento explícito (e não tácito)
-
-## Automação e burocracia
-
-No caso do uso de Machine Learning: "decisão baseada em dados"
-
-  - Parece algo formal, mas o raciocínio acaba sendo uma caixa-preta (opacidade epistêmica)
-  - Dados introduzem problemas:
-    - Arbitrariedade na anotação dos dados (*target labeling*)
-    - Arbitrariedade na seleção dos atributos/*features*
-    - Limite da indução
-  - Taxa de erros: maior ou menor?
-  - Responsabilização e possibilidade de recursos?
-
-## Nosso exemplo: conjunto de dados ficcional {.smaller}
-
-- 1.000 linhas, onde cada linha representa o perfil de um estudante, com atributos relacionados ao desempenho acadêmico e não acadêmico, necessidade financeira e informações demográficas.
+- 1.000 linhas, onde cada linha representa o perfil de um estudante, com atributos relacionados ao desempenho acadêmico e não acadêmico, necessidade financeira e informações demográficas, e a decisão de concessão de bolsa de estudo.
 - Informações são geralmente consideradas em decisões sobre concessão de bolsas de estudo.
 
 1. **`Student_ID`**: um identificador único para cada estudante.
-2. **`GPA`**: média de notas, variando de **2.0** a **4.0**.
-3. **`Extracurricular_Score`**: uma pontuação que representa a participação e conquistas do estudante em atividades extracurriculares, variando de **0** a **100**.
-4. **`Community_Service_Hours`**: o total de horas que o estudante dedicou a atividades de serviço comunitário, variando de **0** a **200**.
-5. **`Financial_Need`**: indica se o estudante possui necessidade financeira.
-6. **`Scholarship_Granted`**: indica se o estudante recebeu bolsa de estudo.
-7. **`Sensitive_Attribute`**: um atributo sensível genérico com dois grupos, usado para análise de equidade (por exemplo, gênero, cor, idade, etc).
+2. **`Sensitive_Attribute`**: um atributo sensível genérico com dois grupos, usado para análise de equidade (por exemplo, gênero, cor, idade, etc).
+3. **`GPA`**: média de notas, variando de **2.0** a **4.0**.
+4. **`Extracurricular_Score`**: uma pontuação que representa a participação e conquistas do estudante em atividades extracurriculares, variando de **0** a **100**.
+5. **`Community_Service_Hours`**: o total de horas que o estudante dedicou a atividades de serviço comunitário, variando de **0** a **200**.
+6. **`Financial_Need`**: indica se o estudante possui necessidade financeira.
+7. **`Scholarship_Granted`**: indica se o estudante recebeu bolsa de estudo. (Quem decidiu isso???)
 
 ```{python}
 import pandas as pd
@@ -86,6 +50,10 @@ display(df)
 ```
 
 ## Treinando o modelo, considerando o atributo sensível  {.smaller}
+
+- Usando um modelo simples de regressão logística.
+- Dividimos o conjunto de dados em **treinamento** e **teste** (80%/20%). Nossas medidas vão avaliar o quão bem o conjunto de treinamento generaliza para o conjunto de teste.
+  - Primeira suposição: os dados refletem o "certo" com respeito a quem merece a bolsa de estudo ou não.
 
 ```{python}
 #| echo: true
@@ -134,6 +102,8 @@ y_pred = model.predict(X_test)
 | **Taxa de Prevalência**                  | (VP + FN) / Total                                   | Proporção de positivos na população real                           |
 
 ## No nosso caso:  {.smaller}
+
+- Observe como as métricas diferem entre os grupos...
 
 ```{python}
 #| echo: false
@@ -247,24 +217,49 @@ metrics_table = create_metrics_table(y_test, y_pred, df, group_col_name='Group')
 display(metrics_table)
 ```
 
-## Em que momento considerar a equidade?
+## Isso é um problema?
 
-* **Pré-processamento**: ajustar o espaço de atributos para que não tenha correlação com o atributo sensível.
-* **Durante o treinamento**: incorporar a restrição no processo de otimização que constrói o classificador.
-* **Pós-processamento**: ajustar um classificador já treinado para que não tenha correlação com o atributo sensível.
+Três possíveis sentidos de "inequidade" e/ou "discriminação":
 
-Vamos focar no pós-processamento, considerando que o atributo sensível foi eliminado no treinamento.
+1. Atribuir vantagem/desvantagem a alguém com base em **critérios errados de relevância**
+2. Atribuir vantagem/desvantagem a alguém com base em **estereótipos e generalizações**
+3. Atribuir vantagem/desvantagem a alguém com base em **coisas sobre as quais a pessoa não tem controle**
 
-## Quatro estratégias
+## Como o atributo sensível entra na equação?
 
-Se resolvermos eliminar o atributo sensível do treinamento:
+- Regressão logística: basicamente uma fórmula linear que combina os atributos para gerar uma pontuação, e então aplica uma função logística para gerar uma probabilidade de aceitação.
+- Algo como:
+$$P(\text{aceito}) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 \cdot GPA + \beta_2 \cdot Extracurricular\_Score + \beta_3 \cdot Community\_Service\_Hours + \beta_4 \cdot Financial\_Need + \beta_5 \cdot Sensitive\_Attribute)}}$$
 
-1. **Ignorar os grupos**, usar o mesmo limiar de decisão;
-2. Usar limiares de decisão diferentes para **maximizar a acurácia** ("máximo lucro")
-3. **Paridade demográfica**: alcançar uma taxa de aceitação igual em todos os grupos;
-4. **Paridade de erro ou acurácia**: alcançar taxas iguais de verdadeiros/falsos positivos/negativos em todos os grupos.
+No modelo atual:
 
-## 1a estratégia: ignorar os grupos, limiar único
+```{python}
+# Get feature importances from the trained model
+feature_importances = model.coef_[0]
+print("Feature Importances:")
+for feature, importance in zip(X.columns, feature_importances):
+    print(f"{feature}: {importance:.4f}")
+```
+
+## O que fazer, então?
+
+* **Pré-processamento**: ajustar o conjunto de dados para que não tenha qualquer correlação com o atributo sensível.
+* **Durante o treinamento**: incorporar restrições no processo de otimização que constrói o modelo (por exemplo, não permitir que o modelo utilize o atributo sensível).
+* **Pós-processamento**: ajustar um modelo já treinado para que não tenha correlação com o atributo sensível.
+
+Vamos focar no **pós-processamento**...
+
+## Quatro "possibilidades"
+
+- Elimina-se o atributo sensível do treinamento, e então:
+
+1. Avestruz com a cabeça na terra: ignorar o atributo sensível, ignorar os grupos, usar o mesmo limiar de decisão para todos;
+2. Usar limiares de decisão diferentes para cada grupo. Três critérios:
+   1. **Maximizar a acurácia** (ou "máximo lucro"): cada grupo tem um limiar de decisão que maximiza a acurácia do modelo para aquele grupo;
+   2. **Paridade demográfica**: alcançar uma taxa de aceitação igual em todos os grupos;
+   3. **Paridade de erro ou acurácia**: alcançar taxas iguais de verdadeiros/falsos positivos/negativos em todos os grupos.
+
+## 1a estratégia: avestruz com a cabeça na terra
 
 ```{python}
 from sklearn.model_selection import train_test_split
@@ -443,11 +438,12 @@ fig = px.bar(gpa_by_group, x=gpa_by_group.index, y='GPA',
 fig.show()
 ```
 
-## 2a estratégia: diferentes limiares, máximo lucro
+## 2a estratégia: diferentes limiares, máxima acurácia
 
-Do ponto de vista de quem vai ofertar as bolsas, a ideia é acertar o máximo que puder.
+- Do ponto de vista de quem vai ofertar as bolsas, a ideia é acertar o máximo que puder.
 
-E se limiares diferentes forem atribuídos aos grupos de forma a maximizar os acertos?
+- E se limiares diferentes forem atribuídos aos grupos de forma a maximizar os acertos?
+  - Pode ser pior ainda... pode ficar mais "rígido" para grupos menos representados, e mais "flexível" para grupos mais representados.
 
 ```{python}
 # Find the optimal threshold for Group A to minimize errors
@@ -512,7 +508,7 @@ display(metrics_table_adjusted)
 
 ## 3a estratégia: paridade demográfica
 
-- A mesma quantidade de pessoas de cada grupo é escolhida (Positivos A = Positivos B)
+- A mesma quantidade de pessoas de cada grupo é escolhida (Positivos A = Positivos B). (Ou alguma outra proporção - "cotas")
 
 ```{python}
 # Find thresholds to achieve demographic parity
@@ -584,7 +580,8 @@ display(metrics_table_adjusted)
 
 ## 4a estratégia: paridade de erro ou acurácia
 
-Por exemplo, podemos tentar equalizar a taxa de verdadeiros positivos entre grupos:
+- Podemos tentar pelo menos evitar que grupos diferentes tenham taxas de erro diferentes...
+- Por exemplo, tentar equalizar a taxa de verdadeiros positivos entre grupos:
 
 ```{python}
 # Function to calculate True Positive Rate (TPR) for a given threshold and group
@@ -666,30 +663,7 @@ metrics_table_adjusted = create_metrics_table(y_test, y_pred_adjusted, df, group
 display(metrics_table_adjusted)
 ```
 
-## Visões sobre justiça (Barocas, Hardt, Narayanan) {.smaller}
-
-| Visão             | Objetivo                                                                                                             | Intervenção                                                    | Quem arca com o custo                                   | Exemplos de técnicas e critérios           | Problemas                                                                          |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| **Estrita**       | Garantir que pessoas com **qualificações semelhantes** tenham **chances semelhantes** de acesso a oportunidades.     | No momento da **tomada de decisão**                            | **Ninguém**                                             | Ignorar grupos; maximizar lucro            | Ignora desigualdades históricas e estruturais; pressupõe que é possível medir o mérito.          |
-| **Intermediária** | **Desconsiderar diferenças** que surgem de **injustiças passadas**, ajustando decisões para compensar desigualdades. | Na **tomada de decisão**, especialmente em momentos críticos   | **Tomador de decisão** (pode repassar custo ao afetado) | Paridade de erro, acurácia, outros ajustes | Falta de critérios claros; risco de injustiça reversa; difícil quantificar compensações.        |
-| **Ampla**         | Garantir que pessoas com **habilidades e ambições semelhantes** possam **realizar seu potencial igualmente**.        | **Ação contínua do Estado** (educação, saúde, habitação, etc.) | **Contribuintes**                                       | Paridade demográfica; políticas públicas   | Exige mudanças estruturais; alto custo político e econômico; difícil de aplicar no curto prazo. |
-
-## Outras abordagens (talvez tentando se aproximar do meio)...
-
----
-
-### Equidade por indivíduo
-
-- Em vez de agrupar as pessoas por categorias como gênero ou raça, avalia-se semelhança entre indivíduos com base em seus atributos relevantes (como desempenho, habilidades, contexto social)
-- Garantir que não haja discriminação entre aqueles que são equivalentes segundo esse critério.
-
-Desafios:
-
-- Como definir “semelhança”?
-- Quais atributos são relevantes para comparar indivíduos?
-- Ignorar completamente as identidades coletivas (como raça e gênero) pode, paradoxalmente, apagar as injustiças sistemáticas vividas por grupos historicamente marginalizados.
-
----
+## Outras abordagens...
 
 ### Equidade por contrafactuais
 
@@ -718,6 +692,45 @@ Desafios:
 - Por exemplo, *path analysis*, *do-calculus*
 
 ![](causal-ex.svg)
+
+- Para aprofundar, há um grande estudo de caso sobre admissões de homens e mulheres na UC Berkeley - [veja aqui](https://fairmlbook.org/causal.html)
+
+## Sociedade da competição
+
+Pressuposto: um mundo de recursos limitados e, portanto, de competição em todos os lugares e todas as áreas.
+
+- em empregos/admissões
+- em provas/testes/avaliações
+- em honras/medalhas/etc
+- em dinheiro/crédito
+
+*"O mundo é feito de ganhadores e perdedores"*
+
+*"Ao vencedor as batatas..."*
+
+- Justiça, então, seria garantir que a competição é justa ("fair game")
+  - Mas quem define as regras? Ou, então: é realmente preciso competir? Há um vazio fundamental sobre a compreensão do lugar de cada um na sociedade...
+
+## Automação e burocracia
+
+Por que buscamos?
+
+1. Automação permite escalar o sistema
+2. Regras e procedimentos formais, *em teoria*, reduzem a arbitrariedade e tornam o raciocínio explícito.
+    - Supõem de que o processo apenas envolve conhecimento explícito (e não tácito)
+    - Passam a impressão de que as regras são justas e imparciais...
+
+## Automação e burocracia
+
+No caso do uso de Machine Learning: "decisão baseada em dados"
+
+  - Parece algo formal, mas o raciocínio acaba sendo uma caixa-preta (opacidade epistêmica)
+  - Dados introduzem problemas:
+    - Arbitrariedade na anotação dos dados (*target labeling*)
+    - Arbitrariedade na seleção dos atributos/*features*
+    - Limite da indução
+  - Taxa de erros: maior ou menor?
+  - Responsabilização e possibilidade de recursos?
 
 ## O problema do mérito {.smaller}
 
@@ -758,9 +771,9 @@ Parece justo, mas é extremamente **problemático**...
 
 ---
 
-5. Cria uma cultura de violência
+5. Cria uma cultura de violência e neuroticismo
 
-- Uma cultura de esforço para "subida social" formenta sentimentos de **ganância e possessividade**
+- Uma cultura de esforço para "subida social" formenta sentimentos de **ganância e possessividade** - "lei do mais forte"
     - O que gera também o pavor de ter sua própria posição/bens roubados
     - E uma ansiedade em justificar porque uns merecem algo e outros não...
         - Especialmente usando estatística ("preconceito formalizado")
@@ -771,7 +784,7 @@ Parece justo, mas é extremamente **problemático**...
 
 ## O problema da otimização {.smaller}
 
-* Normalmente, pessoas querem "maximizar a utilidade/eficiência", então acham que precisam escolher **A MELHOR** pessoa (independentemente de visões sobre justiça).
+* Normalmente, pessoas querem "maximizar a utilidade/eficiência", então acham que precisam escolher **A MELHOR** pessoa.
 
   * Assim, acaba-se confiando em métodos algoritmos complexos ([veja este exemplo](https://fairmlbook.org/legitimacy.html)).
   * No entanto, será que é sempre possível identificar **A MELHOR**?
@@ -779,6 +792,8 @@ Parece justo, mas é extremamente **problemático**...
 * Nessa tentativa de maximização, **os processos de tomada de decisão frequentemente acabam recorrendo a critérios e medições infundadas**.
 
   * Divinação estatística”, apofenia...
+  * Neuroticismo em torno de indicadores, corrida por métricas, etc. (por exemplo, "Dark Academia: How Universities Die", por Peter Fleming)
+    * "Inevitável em um mundo cada vez mais competitivo" - a crise como justificativa para a coerção.
 
 ---
 
@@ -811,10 +826,7 @@ Enquanto a meritocracia enfatiza a ascensão individual e o merecimento, a solid
  - A responsabilidade dos fortes para com os fracos, e opção preferencial pelos pobres;
  - Que a graça, e não o mérito, é a postura fundamental.
 
----
-
-> "[Na perspectiva do Antigo Testamento] Os justos (ṣaddîq) estão dispostos a se colocar em desvantagem para beneficiar a comunidade; os ímpios estão dispostos a colocar a comunidade em desvantagem para beneficiar a si mesmos. Por isso, podemos dizer que a generosidade não é apenas uma questão de misericórdia, mas de justiça. Ezequiel 18:5 começa com uma afirmação geral de que o [justo], o ṣaddîq, pratica a justiça, e apresenta uma lista de onze formas concretas pelas quais os seres humanos exercem essas qualidades. Deixar de praticar qualquer uma dessas coisas é ser injusto, e a lista inclui 'partilhar o pão com o faminto e vestir o que está sem roupa' (v. 7). Portanto, não ser uma pessoa generosa é ser uma pessoa injusta."
-  Tim Keller, "Justiça na Bíblia"
+E se, ao invés do esforço para garantir que uma pessoa seja a realmente avaliada como **a melhor**, o esforço fosse para garantir que **ninguém seja deixado para trás**?
 
 ## Ideias? {.smaller}
 
