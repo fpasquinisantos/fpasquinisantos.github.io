@@ -846,3 +846,7 @@ E se repensássemos nossos modelos não como filtros de mérito, mas como media�
 | Quem merece essa oportunidade?      | Como garantir que todos tenham acesso digno?          | Uso de políticas de inclusão, reserva, sorteio justo quando há empate ou incerteza                 |
 | Como evitar que o sistema erre?     | Como minimizar sofrimento causado por decisões injustas? | Sistemas com canais de recurso, explicabilidade, reversibilidade; preocupação com impacto social   |
 | Como prever com máxima precisão?    | Como agir com justiça mesmo quando a previsão falha?    | Adoção de zonas de incerteza, human-in-the-loop, decisões prudenciais em vez de puramente técnicas |
+
+## O espírito da esperança
+
+> "Quem tem esperança não dirige sua atenção para a essência, nem para o ter-sido ou o presente das coisas (*presentiam rerum*), mas para seu *futuro*, para suas *futuras possibilidades*. O pensamento esperançoso se articula não em *conceitos*, mas em *antecipações* ou *pressentimentos*. É a esperança a primeira a nos abrir o *campo de possibilidades*, antes de considerarmos um objetivo concreto. [...] Sem esperança, estamos presos ao passado ou ao pessimamente existente. Somente a esperança gera ações significativas que trazem o novo para o mundo." - Byung-Chul Han, *O espírito da esperança: contra a sociedade do medo", p. 100-1
