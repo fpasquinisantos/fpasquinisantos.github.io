@@ -663,6 +663,14 @@ metrics_table_adjusted = create_metrics_table(y_test, y_pred_adjusted, df, group
 display(metrics_table_adjusted)
 ```
 
+## Uma provocação...
+
+- E se a questão do preconceito, racismo, sexismo e várias formas de supremacismo nunca foi uma questão de "causalidade direta", mas de otimização e estatística?
+    - Não se exclui um certo grupo porque ele possui uma característica (cor, sexo, etc) que o torna "menos merecedor", mas porque, estatisticamente, essa característica está correlacionada com coisas que o torna "menos merecedor"...
+    - Não se percebe, hoje, a influência sempre presente de racismos e supremacismos porque acredita-se que é "só uma constatação estatística" - "culturas inferiores", "pessoas menos capazes", "menos inteligentes", "menos esforçadas"...
+
+- De uma certa forma, no entanto, é a própria discriminação que produz a realidade que ela diz constatar... ("self-fulfilling prophecy")
+
 ## Outras abordagens...
 
 ### Equidade por contrafactuais
