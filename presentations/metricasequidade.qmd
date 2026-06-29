@@ -26,7 +26,7 @@ include-in-header:
 ## Equidade em Aprendizado de Máquina
 
 - Referência principal: *Fairness and Machine Learning* (Barocas, Hardt, Narayanan, 2019)
-- Vamos mostrar alguns conceitos básicos, e depois partir para reflexões...
+- Vamos mostrar alguns conceitos básicos, algumas limitações/dificuldades e depois partir para reflexões...
 
 ## Nosso exemplo: fazendo alguns estudantes "vencerem na vida"...? {.smaller}
 
@@ -254,6 +254,7 @@ Vamos focar no **pós-processamento**...
 - Elimina-se o atributo sensível do treinamento, e então:
 
 1. Avestruz com a cabeça na terra: ignorar o atributo sensível, ignorar os grupos, usar o mesmo limiar de decisão para todos;
+   1. "Color-blindness argument"
 2. Usar limiares de decisão diferentes para cada grupo. Três critérios:
    1. **Maximizar a acurácia** (ou "máximo lucro"): cada grupo tem um limiar de decisão que maximiza a acurácia do modelo para aquele grupo;
    2. **Paridade demográfica**: alcançar uma taxa de aceitação igual em todos os grupos;
@@ -663,14 +664,6 @@ metrics_table_adjusted = create_metrics_table(y_test, y_pred_adjusted, df, group
 display(metrics_table_adjusted)
 ```
 
-## Uma provocação...
-
-- E se a questão do preconceito, racismo, sexismo e várias formas de supremacismo nunca foi uma questão de "causalidade direta", mas de otimização e estatística?
-    - Não se exclui um certo grupo porque ele possui uma característica (cor, sexo, etc) que o torna "menos merecedor", mas porque, estatisticamente, essa característica está correlacionada com coisas que o torna "menos merecedor"...
-    - Não se percebe, hoje, a influência sempre presente de racismos e supremacismos porque acredita-se que é "só uma constatação estatística" - "culturas inferiores", "pessoas menos capazes", "menos inteligentes", "menos esforçadas"...
-
-- De uma certa forma, no entanto, é a própria discriminação que produz a realidade que ela diz constatar... ("self-fulfilling prophecy")
-
 ## Outras abordagens...
 
 ### Equidade por contrafactuais
@@ -702,6 +695,17 @@ Desafios:
 ![](causal-ex.svg)
 
 - Para aprofundar, há um grande estudo de caso sobre admissões de homens e mulheres na UC Berkeley - [veja aqui](https://fairmlbook.org/causal.html)
+
+## Uma grande limitação: grupos
+
+- A teoria racial brasileira historicamente desafia o modelo de grupos discretos que está por trás de quase toda a literatura de fairness (que nasceu no contexto jurídico-político dos EUA — categorias protegidas por lei, e um histórico de segregação mais acentuada).
+- Oracy Nogueira (1955): distinção entre
+  - **racismo de origem** (EUA): a raça é definida por ascendência, categórica e binária — "uma gota de sangue"; o grupo é discreto e estável.
+  - **racismo de marca** (Brasil): a discriminação incide sobre a aparência fenotípica — cor de pele, traços, cabelo — de forma gradiente e negociável (compensável por outros atributos: renda, instrução, ocupação).
+    - por exemplo, a exigência de "boa aparência" em anúncios de emprego — discriminação fenotípica explícita sem nunca mencionar raça.
+- Implicação: se o atributo sensível "real" (cor) é contínuo, qualquer agrupamento em "Grupo A / Grupo B" já é uma escolha de fronteira que pode estar escondendo discriminação que acontece dentro dos grupos definidos.
+
+- Alguns trabalho recentes atacando esse pressuposto diretamente... por exemplo, Shilova, V., Malherbe, E., Palma, G., Risser, L., & Loubes, J.-M. (2025). Fairness-Aware Grouping for Continuous Sensitive Variables: Application for Debiasing Face Analysis with respect to Skin Tone. arXiv:2507.11247
 
 ## Sociedade da competição
 
